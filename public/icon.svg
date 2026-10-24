@@ -1,7 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <!-- Nexvolt "X" mark (nexvolt/apps/nexvolt_driver_web/priv/static/assets/brand/nexvolt-x.svg) on a dark tile -->
-  <rect width="128" height="128" rx="28" fill="#0b1220"/>
+  <!-- Store icon: 96px artwork centered inside a 128px transparent canvas. -->
+  <g transform="translate(16 16) scale(0.75)">
+  <rect x="0.667" y="0.667" width="126.666" height="126.666" rx="28" fill="#0b1220" stroke="#37414d" stroke-width="1.333"/>
   <g transform="translate(27.8 26) scale(0.05667)">
     <path fill="#16b674" transform="translate(44 1171) scale(1 -1)" d="M-44 -170 446 502 83 1001H384L596 710L933 1171H1234L747 502L1113 0H812L596 296L257 -170Z"/>
+  </g>
   </g>
 </svg>
