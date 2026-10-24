@@ -1,85 +1,71 @@
 # InstaBlock
 
-Chrome extension (WXT + Svelte 5) that unfollows and/or blocks a list of Instagram profiles using
-the session already logged in on a tab. It clicks Instagram's own buttons with random delays, so no
-private API, no tokens, no passwords.
+Extensão Chrome (WXT + Svelte 5, Manifest V3) para bloquear ou deixar de seguir uma lista de
+perfis do Instagram usando os botões da aba já autenticada. Interface do popup em português;
+controles do Instagram reconhecidos em português e inglês.
 
-## Setup
+[Site](https://johngrandson.github.io/instablock/) ·
+[Privacidade](https://johngrandson.github.io/instablock/privacy.html) ·
+[Suporte](https://github.com/johngrandson/instablock/issues)
 
-```
-pnpm install      # also runs `wxt prepare` (generated types in .wxt/)
-pnpm test         # vitest, pure domain only
-pnpm check        # svelte-check
-pnpm build        # .output/chrome-mv3
-pnpm dev          # dev build with reload
-```
+## Desenvolvimento
 
-Load `.output/chrome-mv3` at `chrome://extensions` (Developer mode, Load unpacked).
-
-## Use
-
-The extension expects the tab to be logged in to Instagram already. It never reads or stores
-credentials; a redirect to the login page halts the campaign as `failed (redirected)`.
-
-1. On a logged-in instagram.com tab, open the popup and paste the profiles (name, `@name` or URL)
-   separated by line breaks, spaces or commas. Tokens that cannot be an Instagram username
-   (accents, symbols, other hosts, over 30 chars) are ignored and counted next to the field.
-2. Bloquear comes selected (it also removes the follow). Pick Deixar de seguir if you only want to
-   unfollow, then press Iniciar. The tab navigates profile by profile.
-3. Leave that tab alone until the status reads Concluído. Parar halts after the current delay.
-   Reopening the popup shows the remaining names prefilled, so Iniciar resumes.
-
-The campaign stops at the first failure (expected button never appeared, which is also how an
-Instagram action block shows up, or a redirect to login/checkpoint). Wait a few hours before
-resuming.
-
-## Code map
-
-```
-src/lib/campaign.ts         pure domain: types, transitions, username parsing. Tested.
-src/lib/pacing.ts           delays, active hours, session pacing. Tested.
-src/lib/campaign-store.ts   the one storage item (local:campaign)
-src/lib/runner.ts           effects: one page load of the runner tab processes one target
-src/lib/instagram.ts        anti-corruption layer: LABELS + clicks on the profile page
-src/entrypoints/content.ts  wires message -> start, and step() on every load
-src/entrypoints/popup/      Svelte popup (App.svelte)
+```sh
+pnpm install
+pnpm test
+pnpm check
+pnpm build
+pnpm zip
+pnpm dev
 ```
 
-## Looking human
+Carregue `.output/chrome-mv3` em `chrome://extensions`, com o modo de desenvolvedor ativado.
+Após atualizar a extensão, recarregue a aba do Instagram antes de iniciar uma campanha.
+O ZIP de produção é gerado em `.output/`; não envie o código-fonte como pacote da extensão.
 
-Instagram does not say how it detects automation. Public write-ups point at regular timing, no
-time spent on the page, script clicks with no coordinates, and continuing after a block. What the
-extension does about it, all in `src/lib/pacing.ts` and `src/lib/instagram.ts`:
+## Uso
 
-- waits 3-8 s on each profile, scrolls down and back up before acting;
-- waits 0.8-2.5 s after a dialog opens before confirming;
-- clicks with a pointer event sequence at a random point inside the button, with a press duration;
-- acts only between 08:00 and 23:00 local time, sleeping until the window opens otherwise;
-- halts on the first failure and never retries into a block.
+1. Abra o Instagram no Chrome e confira qual conta está conectada.
+2. Cole nomes, `@nomes` ou URLs de perfis, separados por linha, espaço ou vírgula.
+   Entradas inválidas são ignoradas e contadas junto ao campo.
+3. Escolha **Bloquear** ou **Deixar de seguir** e clique em **Iniciar**.
+   Uma nova campanha começa com Bloquear selecionado; ao retomar, a ação anterior é preservada.
+4. Mantenha a aba aberta e sem navegar. O popup pode ser fechado.
+5. **Parar** cancela esperas e impede novos cliques. Ações já enviadas ao Instagram não são desfeitas.
+   Reabra o popup para retomar manualmente os perfis pendentes.
 
-Known limit: events dispatched from a content script are `isTrusted: false`, like every script
-click. Only `chrome.debugger` can produce trusted input; it needs the `debugger` permission and
-shows a banner. Not done unless Instagram starts rejecting synthetic clicks.
+Só há uma campanha por vez. Fechar a aba, recarregar durante uma etapa, navegar para outra página,
+reiniciar o navegador ou atualizar a extensão interrompe a execução. Uma falha de confirmação
+interrompe a campanha e mantém o alvo pendente. Perfis explicitamente indisponíveis são pulados.
 
-## Pacing and blocks
+## Pausas e limitações
 
-Instagram does not publish limits; its restrictions are velocity-based and depend on account
-history. Vendor guides agree on 10-20 unfollows/hour as safe, 30+/hour as block territory, and
-100-150/day for accounts older than six months (20-50 for new ones). `PACING` in
-`src/lib/pacing.ts` targets about 15/hour: 2.5-5.5 min between targets and a 10-20 min pause
-every 10 targets. `SESSION_CAP` halts a campaign after 40 targets.
+A extensão espera de 2,5 a 5,5 minutos entre perfis, com uma pausa de 10 a 20 minutos a cada dez.
+Atua entre 08h e 23h no horário local e encerra uma sessão após 40 perfis. Esses limites não são
+quotas diárias nem garantem ausência de restrições do Instagram. Não há retomada automática após
+uma parada e nenhuma tentativa de contornar checkpoints ou desafios de autenticação.
 
-Rules of thumb from the same guides: run at most once a day, keep using Instagram normally in
-between, and after any "Action blocked" or checkpoint stop everything for 24 h or more. The
-extension halts on the first failure for that reason.
+Os cliques são eventos de script (`isTrusted: false`). Mudanças no site ou idiomas não reconhecidos
+podem impedir o funcionamento. InstaBlock não é afiliado ao Instagram ou à Meta.
 
-## When Instagram changes labels
+## Estrutura
 
-Everything language- or layout-dependent is `LABELS` at the top of `src/lib/instagram.ts`. Open a
-profile, read the button texts (Following, Unfollow, Follow, the Options icon aria-label, Block,
-Unblock) and add or fix a row. A `failed (timeout waiting for ...)` outcome names the missing label.
+- `src/lib/campaign.ts`: domínio e validação de nomes/URLs.
+- `src/lib/coordinator.ts`: escritor único do estado; identifica campanha, aba e documento.
+- `src/lib/messages.ts`: protocolo validado entre popup, conteúdo e service worker.
+- `src/lib/runner.ts`: execução cancelável de uma etapa na aba.
+- `src/lib/instagram.ts`: controles restritos ao cabeçalho do perfil e diálogos.
+- `src/lib/pacing.ts`: intervalos e horário de atividade.
+- `src/entrypoints/`: popup Svelte, content script e service worker WXT.
+- `docs/`: todos os arquivos do GitHub Pages.
+- `store/`: textos e imagens para publicação na Chrome Web Store.
 
-## Risks
+## GitHub Pages e publicação
 
-Automation is against Instagram's terms. The account can be action-blocked for hours or days. Keep
-the lists short and the delays as they are.
+O site é HTML/CSS estático. Em **Settings → Pages**, selecione **Deploy from a branch**,
+branch **main**, pasta **/docs**. Alterações em `docs/` publicadas em `main` atualizam o site;
+nenhum build ou workflow personalizado é necessário. Preserve `docs/.nojekyll`.
+
+Antes de enviar uma versão à loja, execute os testes, o check e o build; valide o pacote no Chrome,
+a política de privacidade e as capturas correspondentes à versão. Atualize a versão em
+`package.json` e gere o ZIP com `pnpm zip`. A análise e aprovação são feitas pelo Google.

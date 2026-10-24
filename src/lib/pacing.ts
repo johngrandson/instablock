@@ -3,7 +3,7 @@
 export type Range = readonly [minSeconds: number, maxSeconds: number];
 
 export const PACING = {
-  betweenTargets: [150, 330] as Range, // ~15 targets/hour; guides quote 10-20/h safe, 30+/h risky
+  betweenTargets: [150, 330] as Range,
   dwell: [3, 8] as Range, // reading the profile before acting
   reaction: [0.8, 2.5] as Range, // reading a dialog before confirming
   longPause: [600, 1200] as Range,
@@ -12,8 +12,21 @@ export const PACING = {
 };
 
 export const pickMs = ([min, max]: Range) => (min + Math.random() * (max - min)) * 1000;
-export const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-export const wait = (range: Range) => sleep(pickMs(range));
+export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(signal.reason);
+    const abort = () => {
+      clearTimeout(timer);
+      reject(signal?.reason);
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', abort);
+      resolve();
+    }, Math.max(0, ms));
+    signal?.addEventListener('abort', abort, { once: true });
+  });
+}
+export const wait = (range: Range, signal?: AbortSignal) => sleep(pickMs(range), signal);
 
 // 0 inside the active window, otherwise ms until the next window opens.
 export function msUntilActiveHours(now: Date, [start, end] = PACING.activeHours): number {

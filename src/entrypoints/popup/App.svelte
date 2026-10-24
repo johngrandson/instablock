@@ -1,9 +1,10 @@
 <script lang="ts">
   import { browser } from '#imports';
+  import { onMount } from 'svelte';
   import { EMPTY, SESSION_CAP, parseInput, type Action, type Campaign } from '@/lib/campaign';
   import { campaignStore } from '@/lib/campaign-store';
   import { estimateRemainingMs, formatDuration } from '@/lib/pacing';
-  import type { StartCommand } from '@/lib/runner';
+  import { sendCommand } from '@/lib/messages';
   import Alert from './Alert.svelte';
   import OutcomeList from './OutcomeList.svelte';
   import StatusBadge from './StatusBadge.svelte';
@@ -17,7 +18,7 @@
     unfollow: 'Só remove do seu "seguindo".',
   };
   const BUTTON =
-    'w-full py-2 px-3 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg border focus:outline-hidden disabled:opacity-50 disabled:pointer-events-none';
+    'w-full py-2 px-3 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg border focus-visible:ring-2 focus-visible:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none';
   const SEGMENT =
     'flex-1 py-2 px-3 -ms-px first:rounded-s-lg first:ms-0 last:rounded-e-lg inline-flex justify-center items-center text-sm font-medium bg-layer border border-layer-line text-layer-foreground cursor-pointer hover:bg-layer-hover has-checked:z-10 has-checked:bg-primary has-checked:border-primary-line has-checked:text-primary-foreground has-checked:hover:bg-primary-hover has-focus-visible:ring-2 has-focus-visible:ring-primary-focus has-disabled:opacity-50 has-disabled:pointer-events-none';
   const TEXTAREA =
@@ -27,38 +28,59 @@
   let text = $state('');
   let action = $state<Action>('block');
   let error = $state('');
+  let loaded = $state(false);
+  let busy = $state(false);
 
-  const sync = (value: Campaign | null) => (campaign = value ?? EMPTY);
-  campaignStore.getValue().then(sync);
-  campaignStore.watch(sync);
+  onMount(() => {
+    let disposed = false;
+    let updated = false;
+    const sync = (value: Campaign | null) => {
+      if (disposed) return;
+      const next = value ?? EMPTY;
+      if (!loaded || campaign.status === 'running' || campaign.pending.join('\n') !== next.pending.join('\n') || campaign.run?.id !== next.run?.id) {
+        text = next.pending.join('\n');
+        if (next.pending.length || next.outcomes.length) action = next.action;
+      }
+      campaign = next;
+      loaded = true;
+    };
+    const unwatch = campaignStore.watch((value) => { updated = true; sync(value); });
+    void campaignStore.getValue().then((value) => { if (!updated) sync(value); }).catch(() => {
+      if (!disposed) error = 'Não foi possível carregar a campanha. Reabra o popup.';
+    });
+    return () => { disposed = true; unwatch(); };
+  });
 
   const running = $derived(campaign.status === 'running');
   const parsed = $derived(parseInput(text));
   const count = $derived(parsed.targets.length);
-  const processed = $derived(campaign.outcomes.length);
+  const processed = $derived(campaign.outcomes.filter((outcome) => outcome.result !== 'failed').length);
   const total = $derived(processed + campaign.pending.length);
   const percent = $derived(total ? Math.round((processed / total) * 100) : 0);
   const remaining = $derived(formatDuration(estimateRemainingMs(campaign.pending.length)));
   const currentTarget = $derived(campaign.pending[0] ?? '');
   const lastReason = $derived(campaign.outcomes.at(-1)?.reason ?? '');
 
-  // Prefill what is left when idle, so Iniciar resumes a stopped, capped or failed campaign.
-  $effect(() => {
-    if (!running) text = campaign.pending.join('\n');
-  });
-
   async function start() {
+    if (busy || !loaded || running || !count) return;
     error = '';
-    const { targets } = parsed;
-    if (!targets.length) return;
-    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) return;
-    const command: StartCommand = { action, targets };
-    browser.tabs.sendMessage(tab.id, command).catch(() => (error = 'Abra o popup em uma aba do Instagram e clique em Iniciar de novo.'));
+    busy = true;
+    try {
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id === undefined) throw new Error('Abra uma aba do Instagram antes de iniciar.');
+      await sendCommand({ type: 'start', tabId: tab.id, action, targets: parsed.targets });
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : 'Não foi possível iniciar.';
+    } finally { busy = false; }
   }
 
   async function stop() {
-    await campaignStore.setValue({ ...(await campaignStore.getValue()), status: 'stopped' });
+    if (busy || !campaign.run) return;
+    busy = true;
+    error = '';
+    try { await sendCommand({ type: 'stop', runId: campaign.run.id }); }
+    catch (cause) { error = cause instanceof Error ? cause.message : 'Não foi possível parar.'; }
+    finally { busy = false; }
   }
 </script>
 
@@ -73,6 +95,7 @@
       <div
         class="flex w-full h-1.5 bg-surface-1 rounded-full overflow-hidden"
         role="progressbar"
+        aria-label="Progresso da campanha"
         aria-valuenow={percent}
         aria-valuemin="0"
         aria-valuemax="100"
@@ -101,7 +124,7 @@
       id="targets"
       rows="3"
       bind:value={text}
-      disabled={running}
+      disabled={running || busy || !loaded}
       aria-describedby="targets-help"
       placeholder="alice&#10;@bob&#10;instagram.com/carol"
       class={TEXTAREA}
@@ -113,7 +136,7 @@
     <div class="flex rounded-lg shadow-2xs" role="radiogroup" aria-label="Ação">
       {#each ACTIONS as { value, title }}
         <label class={SEGMENT}>
-          <input type="radio" name="action" bind:group={action} {value} disabled={running} class="sr-only" />
+          <input type="radio" name="action" bind:group={action} {value} disabled={running || busy || !loaded} class="sr-only" />
           {title}
         </label>
       {/each}
@@ -126,6 +149,7 @@
       <button
         type="button"
         onclick={stop}
+        disabled={busy}
         class="{BUTTON} bg-secondary border-secondary-line text-secondary-foreground hover:bg-secondary-hover focus:bg-secondary-hover"
       >
         Parar
@@ -136,7 +160,7 @@
     <button
       type="button"
       onclick={start}
-      disabled={!count}
+      disabled={!count || busy || !loaded}
       class="{BUTTON} bg-primary border-primary-line text-primary-foreground hover:bg-primary-hover focus:bg-primary-hover"
     >
       Iniciar
@@ -144,7 +168,7 @@
   {/if}
 
   {#if error}
-    <Alert tone="red" title="Aba errada">{error}</Alert>
+    <Alert tone="red" title="Não foi possível continuar">{error}</Alert>
   {:else if campaign.status === 'failed'}
     <Alert tone="red" title="Falhou em {currentTarget}">
       {lastReason === 'redirected' ? 'O Instagram redirecionou. Faça login nesta aba e clique em Iniciar.' : lastReason}
@@ -155,7 +179,7 @@
     </Alert>
   {/if}
 
-  {#if processed}
+  {#if campaign.outcomes.length}
     <OutcomeList outcomes={campaign.outcomes} />
   {/if}
 

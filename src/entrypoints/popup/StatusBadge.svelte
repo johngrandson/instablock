@@ -14,7 +14,7 @@
   const tone = $derived(TONES[status]);
 </script>
 
-<span class="inline-flex items-center gap-x-1.5 min-w-0 text-xs text-muted-foreground-1">
+<span class="inline-flex items-center gap-x-1.5 min-w-0 text-xs text-muted-foreground-1" role="status">
   <span class="size-1.5 shrink-0 rounded-full {tone.dot}"></span>
   <span class="truncate">{tone.label}{detail ? ` · ${detail}` : ''}</span>
 </span>

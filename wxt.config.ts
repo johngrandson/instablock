@@ -7,7 +7,8 @@ export default defineConfig({
   vite: () => ({ plugins: [tailwindcss()] }),
   manifest: {
     name: 'InstaBlock',
-    description: 'Unfollow or block a list of Instagram profiles with human-like delays.',
+    description: 'Bloqueie ou deixe de seguir uma lista de perfis do Instagram, com pausas e controle de execução.',
+    homepage_url: 'https://johngrandson.github.io/instablock/',
     permissions: ['storage'],
   },
 });

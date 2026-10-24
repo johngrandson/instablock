@@ -79,3 +79,28 @@ describe('parseUsernames', () => {
     expect(parseUsernames('  \n')).toEqual([]);
   });
 });
+
+describe('input and result boundaries', () => {
+  it('rejects misleading hosts, non-profile paths and malformed handles', () => {
+    const invalid = ['https://notinstagram.com/alice', 'https://example.com/instagram.com/alice',
+      'https://www.instagram.com/p/ABC/', 'https://www.instagram.com/alice/reels/',
+      'https://www.instagram.com@evil.test/alice', 'https://evil.test@www.instagram.com/alice',
+      'alice/garbage', '..', '.', 'alice..bob', 'alice.', 'https://www.instagram.com/accounts/'];
+    expect(parseInput(invalid.join('\n'))).toEqual({ targets: [], ignored: invalid });
+  });
+
+  it('accepts genuine profile hosts and discards tracking parameters', () => {
+    expect(parseUsernames('https://instagram.com/alice/?igsh=abc www.instagram.com/BOB/ @Alice')).toEqual(['alice', 'bob']);
+  });
+
+  it('does not consume the pending target for an unrelated result', () => {
+    const campaign = startCampaign('block', ['alice']);
+    expect(recordOutcome(campaign, { target: 'bob', result: 'done' })).toBe(campaign);
+  });
+
+  it('keeps a stop even when the last action finishes or fails', () => {
+    const stopped: Campaign = { ...startCampaign('unfollow', ['alice']), status: 'stopped' };
+    expect(recordOutcome(stopped, { target: 'alice', result: 'done' }).status).toBe('stopped');
+    expect(recordOutcome(stopped, { target: 'alice', result: 'failed' }).status).toBe('stopped');
+  });
+});
