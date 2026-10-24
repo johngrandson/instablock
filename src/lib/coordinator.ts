@@ -90,7 +90,7 @@ export function handleCommand(message: unknown, sender: Browser.runtime.MessageS
           campaign.run = { ...run, phase: 'waiting', readyAt: Date.now() + pickMs(PACING.betweenTargets) + pause };
         } else {
           if (campaign.status !== 'running' || run.phase !== 'waiting' || Date.now() < run.readyAt) return { ok: true };
-          campaign = { ...campaign, run: { ...run, phase: 'navigate', documentId: undefined } };
+          campaign = { ...campaign, run: { id: run.id, tabId: run.tabId, readyAt: run.readyAt, phase: 'navigate' } };
           await campaignStore.setValue(campaign);
           await navigate(campaign);
           return { ok: true, campaign };

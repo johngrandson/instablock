@@ -20,7 +20,7 @@ export function isCommand(value: unknown): value is Command {
   if (message.type === 'stop' || message.type === 'advance') return true;
   if (message.type !== 'result' || !message.outcome || typeof message.outcome !== 'object') return false;
   const outcome = message.outcome as Record<string, unknown>;
-  return isUsername(outcome.target) && ['done', 'skipped', 'failed'].includes(String(outcome.result)) &&
+  return isUsername(outcome.target) && typeof outcome.result === 'string' && ['done', 'skipped', 'failed'].includes(outcome.result) &&
     (outcome.reason === undefined || (typeof outcome.reason === 'string' && outcome.reason.length <= 200));
 }
 
