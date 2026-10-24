@@ -25,8 +25,8 @@ Cole nomes, @nomes ou URLs, escolha a ação e acompanhe os resultados no popup.
 • Interrompe a campanha quando não consegue confirmar uma ação.
 
 Mantenha a aba do Instagram aberta e sem navegar durante a execução. O popup pode ser fechado.
-A extensão reconhece os controles do Instagram em português e inglês e atua entre 08h e 23h no
-horário do computador. Uma sessão processa até 40 perfis.
+A extensão reconhece os controles do Instagram em português e inglês e pode executar em qualquer
+horário. Uma sessão processa até 40 perfis.
 
 Parar impede novos cliques, mas não desfaz ações já enviadas ao Instagram. As pausas não garantem
 ausência de restrições na conta. Mudanças na interface do Instagram podem afetar o funcionamento.
@@ -56,7 +56,7 @@ transmissão de listas ao desenvolvedor. As navegações e ações solicitadas s
 
 ## Arquivos para upload
 
-- Pacote: `.output/instablock-0.1.3-chrome.zip` (gerado por `pnpm zip`).
+- Pacote: `.output/instablock-0.1.4-chrome.zip` (gerado por `pnpm zip`).
 - Ícone: `public/icon/128.png`.
 - Captura: `store/screenshot-1280x800.jpg` (interface de produção com perfis fictícios).
 - Instruções para o revisor: `store/review-instructions.md`.

@@ -7,7 +7,6 @@ export const PACING = {
   reaction: [0.8, 2.5] as Range, // reading a dialog before confirming
   longPause: [60, 120] as Range,
   longPauseEvery: 10,
-  activeHours: [8, 23] as readonly [number, number], // local time
 };
 
 export const pickMs = ([min, max]: Range) => (min + Math.random() * (max - min)) * 1000;
@@ -26,16 +25,6 @@ export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 export const wait = (range: Range, signal?: AbortSignal) => sleep(pickMs(range), signal);
-
-// 0 inside the active window, otherwise ms until the next window opens.
-export function msUntilActiveHours(now: Date, [start, end] = PACING.activeHours): number {
-  const hour = now.getHours() + now.getMinutes() / 60;
-  if (hour >= start && hour < end) return 0;
-  const next = new Date(now);
-  if (hour >= end) next.setDate(next.getDate() + 1);
-  next.setHours(start, 0, 0, 0);
-  return next.getTime() - now.getTime();
-}
 
 const mid = ([min, max]: Range) => (min + max) / 2;
 

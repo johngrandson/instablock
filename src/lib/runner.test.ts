@@ -65,10 +65,13 @@ it('does not navigate after a stop between targets', async () => {
   expect(mocks.send.mock.calls.map(([message]) => message.type)).toEqual(['claim', 'result']);
 });
 
-it('uses the original action and advances only after a successful result and delay', async () => {
+it.each([0, 3, 12, 23])('runs at %i:00 using the original action and only the inter-target delay', async (hour) => {
+  vi.setSystemTime(new Date(2026, 0, 10, hour));
+  const started = Date.now();
   const pending = step(new AbortController());
   await vi.runAllTimersAsync(); await pending;
   expect(mocks.unfollow).toHaveBeenCalledOnce();
   expect(mocks.block).not.toHaveBeenCalled();
   expect(mocks.send.mock.calls.map(([message]) => message.type)).toEqual(['claim', 'result', 'advance']);
+  expect(Date.now() - started).toBe(1100);
 });

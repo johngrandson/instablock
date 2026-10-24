@@ -1,22 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateRemainingMs, formatDuration, msUntilActiveHours } from './pacing';
-
-const at = (hour: number, minute = 0) => new Date(2026, 0, 10, hour, minute);
-const HOUR = 3_600_000;
-
-describe('msUntilActiveHours', () => {
-  it('is zero inside the window', () => {
-    expect(msUntilActiveHours(at(12))).toBe(0);
-  });
-
-  it('waits until 08:00 before the window opens', () => {
-    expect(msUntilActiveHours(at(3))).toBe(5 * HOUR);
-  });
-
-  it('waits until 08:00 next day after the window closes', () => {
-    expect(msUntilActiveHours(at(23, 30))).toBe(8.5 * HOUR);
-  });
-});
+import { estimateRemainingMs, formatDuration } from './pacing';
 
 describe('estimateRemainingMs', () => {
   it('is zero with nothing pending', () => {

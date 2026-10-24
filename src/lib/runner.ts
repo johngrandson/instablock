@@ -2,7 +2,7 @@ import type { Campaign, Outcome } from './campaign';
 import { campaignStore } from './campaign-store';
 import { block, dwell, profileReady, unfollow, type StepContext } from './instagram';
 import { sendCommand } from './messages';
-import { msUntilActiveHours, sleep } from './pacing';
+import { sleep } from './pacing';
 
 const PERFORM = { unfollow, block };
 
@@ -27,7 +27,6 @@ export async function step(controller: AbortController) {
     let outcome: Outcome;
     try {
       await context.beforeClick();
-      await sleep(msUntilActiveHours(new Date()), signal);
       if (!(await profileReady(context))) outcome = { target, result: 'skipped', reason: 'unavailable' };
       else {
         await dwell(signal);
@@ -40,7 +39,6 @@ export async function step(controller: AbortController) {
     const next = await sendCommand({ type: 'result', runId: run.id, outcome });
     if (!next || next.status !== 'running' || !next.run) return;
     await sleep(next.run.readyAt - Date.now(), signal);
-    await sleep(msUntilActiveHours(new Date()), signal);
     await context.beforeClick();
     await sendCommand({ type: 'advance', runId: run.id });
   } catch (error) {
