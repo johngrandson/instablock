@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+@import 'preline/theme.css';
+@plugin '@tailwindcss/forms';
+
+body {
+  width: 20rem;
+}
