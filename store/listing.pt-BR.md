@@ -53,3 +53,10 @@ Declarar o tratamento local de nomes de usuário, URLs de perfis e resultados da
 correspondentes do formulário. Não declarar leitura de credenciais, cookies de autenticação ou
 histórico geral do navegador: essas funções não existem. Não há analytics, venda de dados nem
 transmissão de listas ao desenvolvedor. As navegações e ações solicitadas são processadas pelo Instagram.
+
+## Arquivos para upload
+
+- Pacote: `.output/instablock-0.1.1-chrome.zip` (gerado por `pnpm zip`).
+- Ícone: `public/icon/128.png`.
+- Captura: `store/screenshot-1280x800.jpg` (interface de produção com perfis fictícios).
+- Instruções para o revisor: `store/review-instructions.md`.
