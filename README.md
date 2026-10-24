@@ -40,7 +40,7 @@ interrompe a campanha e mantém o alvo pendente. Perfis explicitamente indispon�
 
 ## Pausas e limitações
 
-A extensão espera de 2,5 a 5,5 minutos entre perfis, com uma pausa de 10 a 20 minutos a cada dez.
+A extensão espera de 30 a 60 segundos entre perfis, com uma pausa adicional de 1 a 2 minutos a cada dez.
 Atua entre 08h e 23h no horário local e encerra uma sessão após 40 perfis. Esses limites não são
 quotas diárias nem garantem ausência de restrições do Instagram. Não há retomada automática após
 uma parada e nenhuma tentativa de contornar checkpoints ou desafios de autenticação.

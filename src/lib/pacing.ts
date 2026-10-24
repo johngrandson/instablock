@@ -1,12 +1,11 @@
-// Pacing policy. Instagram enforcement is velocity- and pattern-based (no published quotas), so
-// delays are wide, randomised, broken by long pauses, and nothing runs at night.
+// Randomized delays and periodic pauses; these are not guaranteed safe limits.
 export type Range = readonly [minSeconds: number, maxSeconds: number];
 
 export const PACING = {
-  betweenTargets: [150, 330] as Range,
+  betweenTargets: [30, 60] as Range,
   dwell: [3, 8] as Range, // reading the profile before acting
   reaction: [0.8, 2.5] as Range, // reading a dialog before confirming
-  longPause: [600, 1200] as Range,
+  longPause: [60, 120] as Range,
   longPauseEvery: 10,
   activeHours: [8, 23] as readonly [number, number], // local time
 };

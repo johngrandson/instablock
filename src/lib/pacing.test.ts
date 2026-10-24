@@ -24,9 +24,9 @@ describe('estimateRemainingMs', () => {
   });
 
   it('adds one long pause every ten targets', () => {
-    const perTarget = 240 + 5.5 + 2 * 1.65;
+    const perTarget = 45 + 5.5 + 2 * 1.65;
     expect(estimateRemainingMs(1)).toBeCloseTo(perTarget * 1000, 5);
-    expect(estimateRemainingMs(10)).toBeCloseTo((10 * perTarget + 900) * 1000, 5);
+    expect(estimateRemainingMs(10)).toBeCloseTo((10 * perTarget + 90) * 1000, 5);
   });
 });
 
